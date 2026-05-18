@@ -21,6 +21,16 @@
     "url": "https://github.com/Mieru-yo/mon-premier-cicd/issues"
   },
   "homepage": "https://github.com/Mieru-yo/mon-premier-cicd#readme",
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  },
   "devDependencies": {
     "eslint": "8.57.1",
     "jest": "^30.0.0"
