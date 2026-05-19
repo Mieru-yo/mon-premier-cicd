@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --ci --coverage --coverageReporters=lcov,text,json-summary",
+    "test:ci": "jest --ci --coverage --coverageReporters=lcov --coverageReporters=text --coverageReporters=json-summary",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix"
