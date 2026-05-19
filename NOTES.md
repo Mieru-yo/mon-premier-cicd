@@ -27,3 +27,11 @@ Observation attendue: en envoyant 3 commits rapidement, les runs obsoletes sont 
 
 ## 3.3 - Download-artifact
 Observation attendue: les artefacts coverage-node-18 et coverage-node-20 sont telechargeables et les rapports sont en general identiques.
+
+## Challenge 1 - Path filters
+Commit configuration path filters: 5fe7cd5
+Commit README only (ne doit pas declencher): 68c29ba
+Commit src change (doit declencher): 339a8ec
+
+Risque d'un filtre trop restrictif:
+Si un fichier critique est oublie dans la liste paths (ex: config de build, scripts, fichiers de test), le pipeline peut ne pas se lancer alors que le comportement applicatif a change.
