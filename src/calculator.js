@@ -3,8 +3,6 @@ function add(a, b) {
   return a + b;
 }
 
-var unused_variable = 'je ne suis jamais utilisee';
-
 function subtract(a, b) {
   return a - b;
 }
