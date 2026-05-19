@@ -10,12 +10,6 @@ Premier pipeline CI/CD avec GitHub Actions, Node.js, Jest et ESLint.
 npm ci && npm test
 ```
 
-## Preuve bonus - Notification Slack
-
-Notification reçue lors d'un échec de pipeline CI :
-
-![Notification Slack](notification-slack.png)
-
 ## Preuve couverture (demande TP)
 
 La couverture est produite par le job de tests en matrix Node.js 18 et 20.
