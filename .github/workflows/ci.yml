@@ -77,6 +77,13 @@ jobs:
           path: coverage/
           retention-days: 14
 
+      - name: Commenter la PR avec la couverture
+        if: github.event_name == 'pull_request' && matrix.node-version == 18
+        uses: MishaKav/jest-coverage-comment@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-summary-path: ./coverage/coverage-summary.json
+
   ci-success:
     name: CI complet
     runs-on: ubuntu-latest
@@ -97,3 +104,16 @@ jobs:
           fi
 
           echo 'CI entierement vert'
+
+  notify-failure:
+    name: Notifier echec
+    runs-on: ubuntu-latest
+    needs: [ lint, test ]
+    if: failure()
+
+    steps:
+      - name: Notifier via webhook
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"Pipeline CI echoue sur ${{ github.repository }} - ${{ github.sha }}"}' \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
