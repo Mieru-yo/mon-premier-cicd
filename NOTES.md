@@ -43,3 +43,19 @@ Approche utilisée:
 - Le job matrix test publie les artefacts coverage-node-18 et coverage-node-20.
 - Un job intermédiaire non-matrix coverage-output télécharge les artefacts et calcule le lines pct (Node 18), puis expose la valeur via GITHUB_OUTPUT.
 - Le job report lit needs.coverage-output.outputs.lines et affiche un statut SUCCESS/ECHEC dans le Step Summary.
+
+## Challenge 3 - Reusable Workflow
+Commit implementation: 06b5d7f
+
+Résultat:
+- Le job test est extrait dans .github/workflows/test-reusable.yml
+- Le workflow principal .github/workflows/ci.yml appelle ce workflow via uses: ./.github/workflows/test-reusable.yml
+- La matrice Node (18/20) est portée par le workflow réutilisable
+
+## Challenge ultime - Composite Action
+Commit implementation: 06b5d7f
+
+Résultat:
+- Action créée dans .github/actions/setup-node-cached/action.yml
+- Elle encapsule checkout + setup-node (cache npm) + npm ci
+- Le job lint et le workflow réutilisable test utilisent cette action locale
