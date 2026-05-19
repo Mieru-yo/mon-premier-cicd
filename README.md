@@ -9,3 +9,9 @@ Premier pipeline CI/CD avec GitHub Actions, Node.js, Jest et ESLint.
 ```bash
 npm ci && npm test
 ```
+
+## Preuve bonus - Notification Slack
+
+Notification recue lors d'un echec de pipeline CI :
+
+![Notification Slack](notification-slack.png)
