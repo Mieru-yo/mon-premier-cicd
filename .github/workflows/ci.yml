@@ -28,6 +28,9 @@ jobs:
       - name: Verification ESLint
         run: npm run lint
 
+      - name: Echec volontaire pour test Slack
+        run: exit 1
+
   test:
     name: Tests Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
