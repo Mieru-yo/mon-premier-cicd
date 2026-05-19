@@ -20,6 +20,8 @@ Notification recue lors d'un echec de pipeline CI :
 
 La couverture est produite par le job de tests en matrix Node.js 18 et 20.
 
+Test challenge 1 : commit README uniquement.
+
 Ou verifier dans GitHub Actions :
 - Ouvrir un run vert du workflow CI
 - Descendre a la section Artifacts
