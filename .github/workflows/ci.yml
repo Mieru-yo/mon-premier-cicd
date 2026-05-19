@@ -21,6 +21,8 @@ jobs:
     name: Lint ESLint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Setup Node cached
         uses: ./.github/actions/setup-node-cached
         with:
