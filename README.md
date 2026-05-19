@@ -12,7 +12,7 @@ npm ci && npm test
 
 ## Preuve bonus - Notification Slack
 
-Notification recue lors d'un echec de pipeline CI :
+Notification reçue lors d'un échec de pipeline CI :
 
 ![Notification Slack](notification-slack.png)
 
@@ -20,9 +20,9 @@ Notification recue lors d'un echec de pipeline CI :
 
 La couverture est produite par le job de tests en matrix Node.js 18 et 20.
 
-Ou verifier dans GitHub Actions :
+Où vérifier dans GitHub Actions :
 - Ouvrir un run vert du workflow CI
-- Descendre a la section Artifacts
-- Verifier la presence de coverage-node-18 et coverage-node-20
+- Descendre à la section Artifacts
+- Vérifier la présence de coverage-node-18 et coverage-node-20
 
-Le resume de couverture est aussi visible dans le Summary des jobs de test.
+Le résumé de couverture est aussi visible dans le Summary des jobs de test.
