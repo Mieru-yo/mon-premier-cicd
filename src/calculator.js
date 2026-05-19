@@ -7,6 +7,8 @@ function subtract(a, b) {
   return a - b;
 }
 
+// Challenge 1: src change should trigger CI with path filters.
+
 function multiply(a, b) {
   return a * b;
 }
