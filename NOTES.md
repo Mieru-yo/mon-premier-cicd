@@ -1,6 +1,8 @@
 # NOTES TP S4
 
 ## 3.1 - Experience fail-fast (fail-fast: false)
+Commit de test: 7028671
+
 1. test(18) est-il annule quand test(20) echoue ?
 Reponse: Non. Avec fail-fast: false, le job Node 18 continue et se termine.
 
@@ -14,9 +16,13 @@ Reponse: Un tableau de couverture par version Node (18/20), puis un statut globa
 Reponse: Echec (code 1) lorsque lint ou test n'est pas success.
 
 ## 3.1 - Experience fail-fast (fail-fast: true)
+Commit de test: 205333f
+
 Observation attendue: des qu'une variante matrix echoue, l'autre peut etre annulee.
 
 ## 3.2 - Experience concurrency
+Commits envoyes rapidement: 188791e, 9ac6ab1, 0226b3a
+
 Observation attendue: en envoyant 3 commits rapidement, les runs obsoletes sont annules et seul le plus recent va au bout.
 
 ## 3.3 - Download-artifact
