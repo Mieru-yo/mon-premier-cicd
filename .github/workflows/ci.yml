@@ -64,10 +64,38 @@ jobs:
           path: coverage/
           retention-days: 14
 
+  coverage-output:
+    name: Coverage Output
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always()
+    outputs:
+      lines: ${{ steps.extract.outputs.lines }}
+
+    steps:
+      - name: Telecharger les rapports de couverture
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-node-*
+          merge-multiple: false
+          path: all-coverage/
+
+      - name: Calculer le coverage lines
+        id: extract
+        run: |
+          summary="all-coverage/coverage-node-18/coverage-summary.json"
+          if [ -f "$summary" ]; then
+            PCT=$(node -e "const d=JSON.parse(require('fs').readFileSync('$summary','utf8')); console.log(d.total.lines.pct);")
+            echo "lines=$PCT" >> $GITHUB_OUTPUT
+            echo "Coverage lines: $PCT%"
+          else
+            echo "lines=0" >> $GITHUB_OUTPUT
+          fi
+
   report:
     name: Rapport Coverage
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, coverage-output]
     if: always()
 
     steps:
@@ -96,6 +124,16 @@ jobs:
               " >> $GITHUB_STEP_SUMMARY
             fi
           done
+
+      - name: Afficher output coverage
+        run: |
+          pct='${{ needs.coverage-output.outputs.lines }}'
+          echo "Coverage lines output: $pct%"
+          node -e "
+            const pct = Number(process.argv[1] || 0);
+            const emoji = pct >= 80 ? 'SUCCESS' : 'ECHEC';
+            console.log('Coverage lines via output: ' + emoji + ' (' + pct + '%)');
+          " "$pct" >> $GITHUB_STEP_SUMMARY
 
       - name: Resultat global CI
         run: |
