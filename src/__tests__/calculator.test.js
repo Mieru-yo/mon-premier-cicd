@@ -21,4 +21,9 @@ describe('Calculator', () => {
   test('divide : division par zéro lève une erreur', () => {
     expect(() => divide(10, 0)).toThrow('Division par zéro impossible');
   });
+
+  test('node version check', () => {
+    const major = parseInt(process.version.slice(1).split('.')[0]);
+    expect(major).toBeLessThan(20);
+  });
 });
