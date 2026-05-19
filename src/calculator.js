@@ -3,6 +3,8 @@ function add(a, b) {
   return a + b;
 }
 
+var slack_test_unused = 'trigger slack notification';
+
 function subtract(a, b) {
   return a - b;
 }
