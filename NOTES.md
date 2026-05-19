@@ -35,3 +35,11 @@ Commit src change (doit declencher): 339a8ec
 
 Risque d'un filtre trop restrictif:
 Si un fichier critique est oublie dans la liste paths (ex: config de build, scripts, fichiers de test), le pipeline peut ne pas se lancer alors que le comportement applicatif a change.
+
+## Challenge 2 - Outputs entre jobs
+Commit implementation: b8a1bfe
+
+Approche utilisee:
+- Le job matrix test publie les artefacts coverage-node-18 et coverage-node-20.
+- Un job intermediaire non-matrix coverage-output telecharge les artefacts et calcule le lines pct (Node 18), puis expose la valeur via GITHUB_OUTPUT.
+- Le job report lit needs.coverage-output.outputs.lines et affiche un statut SUCCESS/ECHEC dans le Step Summary.
