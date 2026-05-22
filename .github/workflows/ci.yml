@@ -1,4 +1,4 @@
-name: CI/CD - Tests, Build & Push Docker
+name: CI/CD - Tests, Build, Staging & Production
 
 on:
   push:
@@ -84,3 +84,51 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs: [ docker ]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+
+    steps:
+      - name: Trigger Render deploy hook (staging)
+        run: curl -fsSL -X POST "${{ secrets.RENDER_STAGING_HOOK }}"
+
+      - name: Health check staging
+        run: |
+          for i in {1..20}; do
+            if curl -fsSL "${{ secrets.RENDER_STAGING_HEALTH_URL }}" > /dev/null; then
+              echo "Staging healthy"
+              exit 0
+            fi
+            echo "Waiting staging health... attempt $i"
+            sleep 15
+          done
+          echo "Staging health-check failed"
+          exit 1
+
+  deploy-production:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    needs: [ deploy-staging ]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Trigger Render deploy hook (production)
+        run: curl -fsSL -X POST "${{ secrets.RENDER_PROD_HOOK }}"
+
+      - name: Health check production
+        run: |
+          for i in {1..20}; do
+            if curl -fsSL "${{ secrets.RENDER_PROD_HEALTH_URL }}" > /dev/null; then
+              echo "Production healthy"
+              exit 0
+            fi
+            echo "Waiting production health... attempt $i"
+            sleep 15
+          done
+          echo "Production health-check failed"
+          exit 1
