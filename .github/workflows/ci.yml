@@ -148,13 +148,13 @@ jobs:
           staging_status="${{ needs.deploy-staging.result }}"
           production_status="${{ needs.deploy-production.result }}"
 
-          test_icon="x"
-          staging_icon="x"
-          production_icon="x"
+          test_icon="✗"
+          staging_icon="✗"
+          production_icon="✗"
 
-          if [ "$test_status" = "success" ]; then test_icon="check"; fi
-          if [ "$staging_status" = "success" ]; then staging_icon="check"; fi
-          if [ "$production_status" = "success" ]; then production_icon="check"; fi
+          if [ "$test_status" = "success" ]; then test_icon="✓"; fi
+          if [ "$staging_status" = "success" ]; then staging_icon="✓"; fi
+          if [ "$production_status" = "success" ]; then production_icon="✓"; fi
 
           {
             echo "## Deployment Summary"
