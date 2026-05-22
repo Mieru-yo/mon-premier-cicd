@@ -163,3 +163,39 @@ jobs:
             echo "- ${staging_icon} Staging deployed at ${STAGING_URL} (status: ${staging_status})"
             echo "- ${production_icon} Production deployed at ${PRODUCTION_URL} (status: ${production_status})"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Slack notification
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not set. Skipping Slack notification."
+            exit 0
+          fi
+
+          overall_status="success"
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.docker.result }}" != "success" ] || \
+             [ "${{ needs.deploy-staging.result }}" != "success" ] || \
+             [ "${{ needs.deploy-production.result }}" != "success" ]; then
+            overall_status="failure"
+          fi
+
+          if [ "$overall_status" = "success" ]; then
+            icon=":white_check_mark:"
+            text="${icon} CI/CD success on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})"
+          else
+            icon=":x:"
+            text="${icon} CI/CD failure on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})"
+          fi
+
+          payload=$(cat <<EOF
+          {
+            "text": "${text}\nRun: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          EOF
+          )
+
+          curl -fsSL -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
