@@ -27,7 +27,8 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src ./src
 
 # Install prod-only deps
-RUN npm ci --only=production
+ENV HUSKY=0
+RUN npm ci --omit=dev --ignore-scripts
 
 # Run as non-root user
 USER node
