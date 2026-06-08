@@ -31,6 +31,11 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:ci
 
+      - name: Verify coverage report exists
+        run: |
+          test -f coverage/lcov.info
+          echo "coverage/lcov.info found"
+
       - name: Check Sonar token availability
         id: sonar-token
         env:
@@ -44,16 +49,23 @@ jobs:
           fi
 
       - name: SonarCloud scan and quality gate
+        id: sonar-scan
         if: steps.sonar-token.outputs.has_token == 'true'
-        continue-on-error: true
-        uses: SonarSource/sonarqube-scan-action@v5
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.qualitygate.wait=true
+            -Dsonar.verbose=true
+
+      - name: Enforce Sonar on main only
+        if: github.ref == 'refs/heads/main' && steps.sonar-scan.outcome == 'failure'
+        run: |
+          echo "Sonar scan failed on main. Failing workflow."
+          exit 1
 
       - name: Sonar workflow status note
         if: always()
