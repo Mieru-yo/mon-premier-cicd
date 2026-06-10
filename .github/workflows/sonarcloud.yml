@@ -51,7 +51,6 @@ jobs:
       - name: SonarCloud scan and quality gate
         id: sonar-scan
         if: steps.sonar-token.outputs.has_token == 'true'
-        continue-on-error: ${{ github.event_name == 'pull_request' }}
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -62,9 +61,9 @@ jobs:
             -Dsonar.verbose=true
 
       - name: Enforce Sonar on main only
-        if: github.ref == 'refs/heads/main' && steps.sonar-scan.outcome == 'failure'
+        if: steps.sonar-scan.outcome == 'failure'
         run: |
-          echo "Sonar scan failed on main. Failing workflow."
+          echo "Sonar scan failed. Failing workflow."
           exit 1
 
       - name: Sonar workflow status note

@@ -25,6 +25,29 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      - name: npm audit (high/critical only)
+        run: npm audit --audit-level=high
+
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gitleaks
+        run: |
+          wget -qO gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.24.2/gitleaks_8.24.2_linux_x64.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+      - name: Run gitleaks
+        run: gitleaks detect --source . --no-git --redact --report-format sarif --report-path gitleaks.sarif
+      - name: Upload gitleaks SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
 
   test:
     name: Tests
@@ -49,7 +72,7 @@ jobs:
   docker:
     name: Docker Build & Push
     runs-on: ubuntu-latest
-    needs: [ lint, test ]
+    needs: [ lint, test, gitleaks ]
     permissions:
       contents: read
       packages: write
@@ -88,13 +111,52 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  security:
+    name: Security (Trivy)
+    runs-on: ubuntu-latest
+    needs: [ docker ]
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image for scan
+        run: docker build -t mon-premier-cicd:scan .
+      - name: Trivy image scan (HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: mon-premier-cicd:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
   deploy-staging:
     name: Deploy Staging
     runs-on: ubuntu-latest
-    needs: [ docker ]
-    environment: staging
+    needs: [ docker, security ]
+    environment: ${{ github.ref == 'refs/heads/main' && 'staging' || 'staging-pr' }}
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
+      - name: Start GitHub deployment (staging)
+        if: github.ref == 'refs/heads/main'
+        id: deployment-staging
+        uses: bobheadxi/deployments@v1
+        with:
+          step: start
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: staging
+          ref: ${{ github.sha }}
+
       - name: Trigger Render deploy hook (staging)
         if: github.ref == 'refs/heads/main'
         run: curl -fsSL -X POST "${{ secrets.RENDER_STAGING_HOOK }}"
@@ -113,6 +175,27 @@ jobs:
           echo "Staging health-check failed"
           exit 1
 
+      - name: Finish GitHub deployment (staging success)
+        if: github.ref == 'refs/heads/main' && success()
+        uses: bobheadxi/deployments@v1
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: success
+          env: staging
+          env_url: ${{ env.STAGING_URL }}
+          deployment_id: ${{ steps.deployment-staging.outputs.deployment_id }}
+
+      - name: Finish GitHub deployment (staging failure)
+        if: github.ref == 'refs/heads/main' && failure()
+        uses: bobheadxi/deployments@v1
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: failure
+          env: staging
+          deployment_id: ${{ steps.deployment-staging.outputs.deployment_id }}
+
       - name: Skip deploy on pull request
         if: github.event_name == 'pull_request'
         run: |
@@ -122,9 +205,22 @@ jobs:
     name: Deploy Production
     runs-on: ubuntu-latest
     needs: [ deploy-staging ]
-    environment: production
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'production-pr' }}
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
+      - name: Start GitHub deployment (production)
+        if: github.ref == 'refs/heads/main'
+        id: deployment-production
+        uses: bobheadxi/deployments@v1
+        with:
+          step: start
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: production
+          ref: ${{ github.sha }}
+
       - name: Trigger Render deploy hook (production)
         if: github.ref == 'refs/heads/main'
         run: curl -fsSL -X POST "${{ secrets.RENDER_PROD_HOOK }}"
@@ -143,6 +239,27 @@ jobs:
           echo "Production health-check failed"
           exit 1
 
+      - name: Finish GitHub deployment (production success)
+        if: github.ref == 'refs/heads/main' && success()
+        uses: bobheadxi/deployments@v1
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: success
+          env: production
+          env_url: ${{ env.PRODUCTION_URL }}
+          deployment_id: ${{ steps.deployment-production.outputs.deployment_id }}
+
+      - name: Finish GitHub deployment (production failure)
+        if: github.ref == 'refs/heads/main' && failure()
+        uses: bobheadxi/deployments@v1
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: failure
+          env: production
+          deployment_id: ${{ steps.deployment-production.outputs.deployment_id }}
+
       - name: Skip deploy on pull request
         if: github.event_name == 'pull_request'
         run: |
@@ -152,20 +269,26 @@ jobs:
     name: Notify & Summary
     runs-on: ubuntu-latest
     if: always()
-    needs: [ lint, test, docker, deploy-staging, deploy-production ]
+    needs: [ lint, test, gitleaks, docker, security, deploy-staging, deploy-production ]
 
     steps:
       - name: Build run summary
         run: |
           test_status="${{ needs.test.result }}"
+          gitleaks_status="${{ needs.gitleaks.result }}"
+          security_status="${{ needs.security.result }}"
           staging_status="${{ needs.deploy-staging.result }}"
           production_status="${{ needs.deploy-production.result }}"
 
           test_icon="✗"
+          gitleaks_icon="✗"
+          security_icon="✗"
           staging_icon="✗"
           production_icon="✗"
 
           if [ "$test_status" = "success" ]; then test_icon="✓"; fi
+          if [ "$gitleaks_status" = "success" ]; then gitleaks_icon="✓"; fi
+          if [ "$security_status" = "success" ]; then security_icon="✓"; fi
           if [ "$staging_status" = "success" ]; then staging_icon="✓"; fi
           if [ "$production_status" = "success" ]; then production_icon="✓"; fi
 
@@ -173,6 +296,8 @@ jobs:
             echo "## Deployment Summary"
             echo ""
             echo "- ${test_icon} Tests: ${test_status}"
+            echo "- ${gitleaks_icon} Gitleaks: ${gitleaks_status}"
+            echo "- ${security_icon} Trivy: ${security_status}"
             echo "- ${staging_icon} Staging deployed at ${STAGING_URL} (status: ${staging_status})"
             echo "- ${production_icon} Production deployed at ${PRODUCTION_URL} (status: ${production_status})"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -188,20 +313,36 @@ jobs:
           fi
 
           overall_status="success"
+          failed_jobs=""
           if [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.gitleaks.result }}" != "success" ] || \
              [ "${{ needs.docker.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ] || \
              [ "${{ needs.deploy-staging.result }}" != "success" ] || \
              [ "${{ needs.deploy-production.result }}" != "success" ]; then
             overall_status="failure"
           fi
 
+          for job in lint test gitleaks docker security deploy-staging deploy-production; do
+            result="${{ needs.lint.result }}"
+            if [ "$job" = "test" ]; then result="${{ needs.test.result }}"; fi
+            if [ "$job" = "gitleaks" ]; then result="${{ needs.gitleaks.result }}"; fi
+            if [ "$job" = "docker" ]; then result="${{ needs.docker.result }}"; fi
+            if [ "$job" = "security" ]; then result="${{ needs.security.result }}"; fi
+            if [ "$job" = "deploy-staging" ]; then result="${{ needs.deploy-staging.result }}"; fi
+            if [ "$job" = "deploy-production" ]; then result="${{ needs.deploy-production.result }}"; fi
+            if [ "$result" != "success" ]; then
+              failed_jobs="${failed_jobs}${job}(${result}) "
+            fi
+          done
+
           if [ "$overall_status" = "success" ]; then
             icon=":white_check_mark:"
-            text="${icon} CI/CD success on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})"
+            text="${icon} CI/CD success on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})\\nStaging: ${STAGING_URL}\\nProduction: ${PRODUCTION_URL}"
           else
             icon=":x:"
-            text="${icon} CI/CD failure on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})"
+            text="${icon} CI/CD failure on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})\\nCause: ${failed_jobs}"
           fi
 
           payload=$(cat <<EOF
