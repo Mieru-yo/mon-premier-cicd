@@ -86,3 +86,31 @@ Où vérifier dans GitHub Actions :
 - Vérifier la présence de coverage-node-18 et coverage-node-20
 
 Le résumé de couverture est aussi visible dans le Summary des jobs de test.
+
+## DevSecOps Alerts (TP8)
+
+### Comment interpreter les alertes
+
+- `npm audit` (job `Lint & Format`) : verifie les vulnerabilites de dependances Node.js. Le pipeline bloque sur `HIGH` et `CRITICAL`.
+- `Gitleaks` (job `Gitleaks`) : detecte les secrets potentiellement commits (tokens, cles API, mots de passe).
+- `Trivy` (job `Security (Trivy)`) : scanne l'image Docker. Un rapport SARIF est publie dans l'onglet Security de GitHub.
+- `SonarCloud Scan` : qualite globale et quality gate.
+
+### Procedure en cas de CVE critique
+
+1. Identifier la source : dependance npm directe/transitive ou image Docker de base.
+2. Ouvrir un ticket incident securite avec CVE, severite, composant impacte et contexte runtime.
+3. Appliquer un correctif immediat : mise a jour dependance/image ou mitigation temporaire documentee.
+4. Relancer la CI complete (audit + trivy + tests + sonar).
+5. Si correction impossible immediatement :
+
+- documenter un risque accepte temporairement,
+- definir une date d'echeance,
+- ajouter un suivi prioritaire dans le backlog securite.
+
+6. Notifier l'equipe via Slack avec la cause, le scope et la decision (fix now / mitigation).
+
+### Monitoring uptime
+
+- UptimeRobot surveille l'endpoint `/health` de production.
+- En cas d'alerte uptime, verifier rapidement : run de deploiement, logs Render, dernier commit merge, et alertes Sonar/Trivy.

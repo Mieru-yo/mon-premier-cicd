@@ -1,2 +1,19 @@
+if [ ! -f package.json ]; then
+	echo "Warning: pre-commit executed outside project root, skipping local checks."
+	exit 0
+fi
+
+if ! command -v docker > /dev/null 2>&1; then
+	echo "Docker is required for local gitleaks pre-commit scan."
+	exit 1
+fi
+
+repo_root=$(git rev-parse --show-toplevel 2> /dev/null || true)
+if [ -n "${repo_root}" ]; then
+	docker run --rm -v "${repo_root}:/repo" zricethezav/gitleaks:latest detect --source=/repo --no-git --redact
+else
+	echo "Warning: unable to resolve repository root in hook context, skipping local gitleaks scan."
+fi
+
 npm run lint
 npm run format:check
