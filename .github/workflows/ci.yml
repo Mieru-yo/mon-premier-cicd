@@ -339,10 +339,10 @@ jobs:
 
           if [ "$overall_status" = "success" ]; then
             icon=":white_check_mark:"
-            text="${icon} CI/CD success on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})\\nStaging: ${STAGING_URL}\\nProduction: ${PRODUCTION_URL}"
+            text="${icon} CI/CD success on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})\\nSHA: ${GITHUB_SHA}\\nStaging: ${STAGING_URL}\\nProduction: ${PRODUCTION_URL}"
           else
             icon=":x:"
-            text="${icon} CI/CD failure on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})\\nCause: ${failed_jobs}"
+            text="${icon} CI/CD failure on ${GITHUB_REPOSITORY} (${GITHUB_REF_NAME})\\nSHA: ${GITHUB_SHA}\\nCause: ${failed_jobs}"
           fi
 
           payload=$(cat <<EOF
