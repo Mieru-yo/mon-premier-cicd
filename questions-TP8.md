@@ -65,13 +65,13 @@ Si Trivy detecte 3 CVE HIGH sur l'image de base non corrigeable immediatement:
 ### EX.3 - Notifications Slack
 
 **(Q9)**
-Un job `Notify & Summary` envoie un message Slack en cas d'echec avec: repo, branche, SHA implicite via run, lien du run GitHub Actions, et cause (liste des jobs en echec).
+Un job `Notify & Summary` envoie un message Slack en cas d'echec avec: nom du repo, branche, `GITHUB_SHA`, lien du run GitHub Actions, et cause (liste des jobs en echec).
 
 **(Q10)**
-Test effectue via erreur pipeline volontaire (violation lint). Notification recue avec indicateur rouge, nom repo/branche, et lien logs. Le message contient la cause (job(s) failed) pour triage rapide.
+Test effectue via erreur pipeline volontaire (violation lint). Notification recue avec indicateur rouge, nom repo, branche, SHA du commit, et lien vers les logs. Le message contient aussi la cause (job(s) failed) pour triage rapide.
 
 **(Q11)**
-Notification de succes envoyee apres run complet vert avec indicateur vert, URL staging et production, et lien run. Difference cle: l'echec envoie cause detaillee; le succes envoie endpoints deployes.
+Notification de succes envoyee apres run complet vert avec indicateur vert, SHA du commit, URL staging et production, et lien run. Difference cle: l'echec envoie la cause detaillee; le succes met en avant les endpoints deployes.
 
 **(Q12)**
 3 strategies anti-notification fatigue:
